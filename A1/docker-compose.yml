@@ -1,0 +1,22 @@
+services:
+  web-app-1:
+    image: francestest/webapp1:latest
+    ports:
+      - 6000:6000
+    volumes:
+      - .:/usr/data/app
+    networks:
+      - web
+
+  web-app-2:
+    image: francestest/webapp2:latest
+    hostname: webapp2
+    ports:
+      - 6001:6001
+    volumes:
+      - .:/usr/data/app
+    networks:
+      - web
+
+networks:
+  web:
