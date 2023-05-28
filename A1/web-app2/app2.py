@@ -29,7 +29,7 @@ def parse():
     except csv.Error as e:
         return jsonify({"file": file, "error": "Input file not in CSV format."}), 400
     except Exception as e:
-        return jsonify({"error: {}".format(e)}), 500
+        return jsonify({"file": file, "error": "Input file not in CSV format."}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
