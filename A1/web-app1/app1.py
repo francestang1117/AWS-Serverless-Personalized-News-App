@@ -4,24 +4,30 @@ import requests
 
 app = Flask(__name__)
 
+
 @app.route('/calculate', methods=['POST'])
 def getFile():
 
-    try:
-        request_data = request.get_json()
-        file = request_data["file"]
-        product = request_data["product"]
+    file = None
 
-        # validate file
-        if not file:
-            return jsonify({"file": file, "error": "Invalid JSON input."})
+    request_data = request.get_json()
+
+    # validate file
+    if 'file' not in request_data:
+        return jsonify({"file": file, "error": "Invalid JSON input."})
     
-        elif not os.path.isfile('/usr/data/app/' + file):
-            return jsonify({"file": file, "error": "File not found"})
+    file = request_data["file"]
+    product = request_data["product"]
 
-        params = {"file": file, "product": product}
+    if not file:
+        return jsonify({"file": file, "error": "Invalid JSON input."})
+    
+    if not os.path.isfile('/usr/data/app/' + file):
+        return jsonify({"file": file, "error": "File not found"})
 
+    params = {"file": file, "product": product}
 
+    try:
         response = requests.get(url="http://webapp2:6001/parse", params=params)
 
         data = response.json()
