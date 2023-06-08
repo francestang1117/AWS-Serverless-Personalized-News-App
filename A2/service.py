@@ -1,5 +1,4 @@
 from concurrent import futures
-import logging
 import os
 from urllib.parse import urlparse
 import computeandstorage_pb2
@@ -29,14 +28,14 @@ class EC2OperationService(computeandstorage_pb2_grpc.EC2OperationsServicer):
 
 
         try:
-            logging.info("upload file")
+            print("upload file")
             s3client.upload_file("data.txt", EC2OperationService.bucket_name, "data.txt")
             url = "https://%s.s3.amazonaws.com/%s" % (EC2OperationService.bucket_name, "data.txt")
 
             return computeandstorage_pb2.StoreReply(s3uri=url)
         
         except ClientError as e:
-            logging.error(e)
+            print(e)
 
 
 
@@ -48,20 +47,20 @@ class EC2OperationService(computeandstorage_pb2_grpc.EC2OperationsServicer):
 
             data = request.data
 
-            logging.info("downloading file ...")
+            print("downloading file ...")
             s3client.download_file(EC2OperationService.bucket_name, "data.txt", "data.txt")
 
-            logging.info("Appending data ...")
+            print("Appending data ...")
             with open("data.txt", "a") as f:
                 f.write(data)
 
-            logging.info("upload file")
+            print("upload file")
             s3client.upload_file("data.txt", EC2OperationService.bucket_name, "data.txt")
 
             return computeandstorage_pb2.AppendReply()
 
         except ClientError as e:
-            logging.error(e)
+            print(e)
     
 
     def DeleteFile(self, request, context):
@@ -74,21 +73,21 @@ class EC2OperationService(computeandstorage_pb2_grpc.EC2OperationsServicer):
             parsed_url = urlparse(url)
             file = os.path.basename(parsed_url.path)
 
-            logging.info("Deleting file ...")
+            print("Deleting file ...")
             s3client.delete_object(Bucket = EC2OperationService.bucket_name, Key = file)
 
             return computeandstorage_pb2.DeleteReply()
 
         except ClientError as e:
-            logging.error(e)
+            print(e)
 
 
 def server():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
     computeandstorage_pb2_grpc.add_EC2OperationsServicer_to_server(EC2OperationService(), server)
-    logging.info("Start listening on 50051")
+    print("Start listening on 50051")
     server.add_insecure_port('[::]:50051')
-    logging.info("GRPC starting")
+    print("GRPC starting")
     server.start()
     server.wait_for_termination()
 
