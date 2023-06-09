@@ -47,7 +47,7 @@ class EC2OperationService(computeandstorage_pb2_grpc.EC2OperationsServicer):
 
             data = request.data
 
-            response = s3client.get_object(EC2OperationService.bucket_name, "data.txt")
+            response = s3client.get_object(Bucket = EC2OperationService.bucket_name, Key = "data.txt")
             current_data = response['Body'].read().decode('utf-8')
             print("Appending data ...")
             updated_data = current_data + data
