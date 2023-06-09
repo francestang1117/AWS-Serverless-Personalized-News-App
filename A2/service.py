@@ -55,7 +55,7 @@ class EC2OperationService(computeandstorage_pb2_grpc.EC2OperationsServicer):
             #     f.write(data)
 
             # print("upload file")
-            s3client.putObject(EC2OperationService.bucket_name, "data.txt", data)
+            s3client.put_object(Bucket = EC2OperationService.bucket_name, Key = "data.txt", Body = data)
 
             return computeandstorage_pb2.AppendReply()
 
