@@ -30,7 +30,7 @@ class EC2OperationService(computeandstorage_pb2_grpc.EC2OperationsServicer):
         try:
             print("upload file")
             s3client.upload_file("data.txt", EC2OperationService.bucket_name, "data.txt")
-            url = "https://%s.s3.amazonaws.com/%s" % (EC2OperationService.bucket_name, "data.txt")
+            url = "https://%s.s3.%s.amazonaws.com/%s" % (EC2OperationService.bucket_name, "us-east-1","data.txt")
 
             return computeandstorage_pb2.StoreReply(s3uri=url)
         
@@ -86,7 +86,7 @@ def server():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     computeandstorage_pb2_grpc.add_EC2OperationsServicer_to_server(EC2OperationService(), server)
     print("Start listening on 50051")
-    server.add_insecure_port('3.83.230.167:50051')
+    server.add_insecure_port('[::]:50051')
     print("GRPC starting")
     server.start()
     server.wait_for_termination()
