@@ -47,15 +47,20 @@ class EC2OperationService(computeandstorage_pb2_grpc.EC2OperationsServicer):
 
             data = request.data
 
+            response = s3client.get_object(EC2OperationService.bucket_name, "data.txt")
+            current_data = response['Body'].read().decode('utf-8')
+            print("Appending data ...")
+            updated_data = current_data + data
+
             # print("downloading file ...")
             # s3client.download_file(EC2OperationService.bucket_name, "data.txt", "data.txt")
 
-            print("Appending data ...")
+            
             # with open("data.txt", "a") as f:
             #     f.write(data)
 
             # print("upload file")
-            s3client.put_object(Bucket = EC2OperationService.bucket_name, Key = "data.txt", Body = data)
+            s3client.put_object(Bucket = EC2OperationService.bucket_name, Key = "data.txt", Body = updated_data.encode('utf-8'))
 
             return computeandstorage_pb2.AppendReply()
 
