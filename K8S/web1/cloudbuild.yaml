@@ -1,0 +1,23 @@
+steps:
+  # Docker Build 
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'us-central1-docker.pkg.dev/csci-5409-s23-k8s/web1/webapp1:latest', './web-app1']
+  
+  # Docker Push
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'us-central1-docker.pkg.dev/csci-5409-s23-k8s/web1/webapp1:latest']
+
+  # deploy container image to GKE
+  - name: "gcr.io/cloud-builders/gke-deploy"
+    args:
+    - run
+    - --filename=deployment.yaml
+    - --image=us-central1-docker.pkg.dev/csci-5409-s23-k8s/web1/webapp1:latest
+    - --location=${_CLOUDSDK_COMPUTE_ZONE}
+    - --cluster=${_CLOUDSDK_CONTAINER_CLUSTER}
+
+substitutions:
+  _CLOUDSDK_COMPUTE_ZONE: us-central1
+  _CLOUDSDK_CONTAINER_CLUSTER: csci-5409-s23-k8s-gke
+
+  

@@ -1,0 +1,47 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-service
+  namespace: default
+  labels:
+    app: app2
+    app.kubernetes.io/managed-by: gcp-cloud-build-deploy
+spec:
+  ports:
+  - protocol: TCP
+    port: 6001
+    targetPort: 6001
+  selector:
+    app: app2
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app2
+  namespace: default
+  labels:
+    app: app2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app2
+  template:
+    metadata:
+      labels:
+        app: app2
+    spec:
+      volumes:
+        - name: pv-app2
+          persistentVolumeClaim:
+            claimName: k8s-pvc
+      containers:
+        - name: webapp2
+          image: us-central1-docker.pkg.dev/csci-5409-s23-k8s/web2/webapp2:latest
+          ports:
+            - containerPort: 6001
+          volumeMounts:
+            - name: pv-app2
+              mountPath: /jiaye_PV_dir
