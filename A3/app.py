@@ -7,8 +7,7 @@ db = SQLAlchemy(app)
 
 class Product(db.Model):
     __tablename__ = 'products'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100))
+    name = db.Column(db.String(100), primary_key=True)
     price = db.Column(db.String(100))
     availability = db.Column(db.Boolean)
 
