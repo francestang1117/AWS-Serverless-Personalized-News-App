@@ -1,0 +1,107 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f8f8f8;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-container {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+  
+.form-container label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+.form-container select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.form-container .param {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    margin-right: 20px;
+}
+
+.form-container input[type="number"] {
+    max-width: 250px;
+}
+
+.form-container input[type="submit"] {
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 20px;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+.form-container .submit-email-button {
+    max-width: 150px;
+    margin-top: 10px;
+}
+
+.form-container input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+  
+.checkbox-container label {
+    margin-left: 5px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.result-container {
+    margin-top: 20px;
+}
+
+.data {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.data h2 {
+    margin-bottom: 10px;
+    color: #007bff;
+}
+  
+.data h3 {
+    margin-bottom: 5px;
+    color: #666;
+}
+  
+.data p {
+    margin-bottom: 5px;
+}
+  
+.error {
+    color: red;
+    font-weight: bold;
+}
+
+

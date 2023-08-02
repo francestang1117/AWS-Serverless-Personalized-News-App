@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Cloudformation for the EC2 instance
+
+Resources:
+  NewsEC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      KeyName: testkey
+      ImageId: ami-0f34c5ae932e6f0e4
+      InstanceType: t2.micro
+      Tags:
+        - Key: Name
+          Value: newsInstance
+      SecurityGroups:
+        - !Ref NewsReactAppSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          sudo yum update -y
+          curl -fsSL https://rpm.nodesource.com/setup_16.x | sudo bash -
+          sudo yum install -y nodejs jq
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.34.0/install.sh | bash
+          source ~/.bashrc
+          sudo yum install awscli -y
+          aws configure set aws_access_key_id AKIAWEVUX3F6RG4GCYGK
+          aws configure set aws_secret_access_key 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
+
+          REACT_APP_APIGATEWAY_URL=$(aws cloudformation describe-stacks --stack-name news --query 'Stacks[0].Outputs[?OutputKey==`ApiGatewayEndpoint`].OutputValue' --output text)
+          echo "API Gateway URL is: $REACT_APP_APIGATEWAY_URL"
+
+          nvm install node
+          mkdir -p /home/my-react-app/news-app
+          aws s3 cp s3://newsterm/news-app.zip /home/my-react-app/news-app.zip
+          echo "export REACT_APP_APIGATEWAY_URL=\"$REACT_APP_APIGATEWAY_URL\"" >> /home/my-react-app/news-app/.env
+          source /home/my-react-app/news-app/.env
+          cd /home/my-react-app/news-app
+          unzip ../news-app.zip
+          npm install
+          npm install --save react-scripts@latest
+          npm run build
+          nohup npm start &
+
+
+  NewsReactAppSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for the React App EC2 instance
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
