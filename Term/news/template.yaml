@@ -1,0 +1,200 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS CloudFormation template for Lambda functions, API Gateway, SNS, Dynamodb
+Parameters:
+  TableName:
+    Type: String
+    Default: NEWS
+  TopicName:
+    Type: String
+    Default: news
+  
+Resources:
+  NewsRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Description: The API to post information
+      Name: NewsAPI
+
+  NewsResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref NewsRestApi
+      ParentId: !GetAtt NewsRestApi.RootResourceId
+      PathPart: news
+
+  requests:
+    Type: AWS::Lambda::LayerVersion
+    Properties: 
+      CompatibleArchitectures: 
+        - x86_64
+      CompatibleRuntimes: 
+        - python3.9
+      Content: 
+        S3Bucket: newsterm
+        S3Key: layer.zip
+      LayerName: requests-layer
+
+  GetNewsLambdaFunction: 
+    Type: AWS::Lambda::Function
+    Properties: 
+      Description: the lambda function to get, process news and store to database
+      FunctionName: GetNewsFunction
+      Runtime: python3.10
+      Handler: lambda_function.lambda_handler
+      Code:
+        S3Bucket: newsterm
+        S3Key: get_news.zip
+      Layers:
+        - !Ref requests
+      Role: arn:aws:iam::422359587197:role/termRole
+      MemorySize: 128
+      Timeout: 60
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref TableName
+          SNS_TOPIC_ARN: !Ref NewsTopic
+
+  
+  NewsAPIMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref NewsRestApi
+      ResourceId: !Ref NewsResource
+      AuthorizationType: NONE
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetNewsLambdaFunction.Arn}/invocations
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+            ResponseTemplates:
+              "application/json": ""
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          ResponseModels:
+            "application/json": "Empty"
+      
+
+  NewsAPIOptionsMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref NewsRestApi
+      ResourceId: !Ref NewsResource
+      AuthorizationType: NONE
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - StatusCode: 200
+            ResponseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'*'"
+              method.response.header.Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+              method.response.header.Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+            ResponseTemplates:
+              "application/json": ""
+        RequestTemplates:
+          "application/json": '{"statusCode": 200}'
+      MethodResponses:
+        - StatusCode: 200
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Origin: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Headers: true
+        
+
+  NewsAPIGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId: !Ref NewsRestApi
+    DependsOn: 
+      - NewsAPIMethod
+
+  NewsAPIGatewayStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref NewsRestApi
+      DeploymentId: !Ref NewsAPIGatewayDeployment
+      StageName: dev
+
+  # grant permission to the API Gateway to invoke the lambda
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GetNewsLambdaFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${NewsRestApi}/*
+            
+  SendNewsLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: the lambda function to send news via email
+      FunctionName: SendNewsFunction
+      Runtime: python3.10
+      Handler: lambda_function.lambda_handler
+      Code:
+        S3Bucket: newsterm
+        S3Key: send_news.zip
+      MemorySize: 128
+      Timeout: 60
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref NewsTopic
+          DYNAMODB_TABLE: !Ref TableName
+      Role: arn:aws:iam::422359587197:role/termRole
+
+  # Table
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties: 
+      TableName: 
+        !Ref TableName 
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: publishTime
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: publishTime
+          KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  DynamoDBStreamEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 5
+      EventSourceArn: !GetAtt DynamoDBTable.StreamArn
+      FunctionName: !GetAtt SendNewsLambdaFunction.Arn
+      StartingPosition: LATEST
+
+  # SNS
+  NewsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Ref TopicName
+
+Outputs:
+  ApiGatewayEndpoint:
+    Value: !Sub https://${NewsRestApi}.execute-api.${AWS::Region}.amazonaws.com/dev
+    Export:
+      Name: ApiGatewayEndpoint
+
+
